@@ -1,4 +1,14 @@
-import sql
+import MySQLdb
+
+
+try:
+    db = MySQLdb.connect(
+        host="localhost",
+        user="root",
+        passwd="toor",
+        db="dictionary")
+except MySQLdb.Error as err:
+    print("Connection error: {}".format(err))
 
 
 def insert(word, length):
@@ -8,9 +18,16 @@ def insert(word, length):
     # ...
     grams = parse_ngrams(word)
 
-    q_word = "INSERT INTO `dictionary`.`word` ('word', 'length') VALUES ('" + word + "', " + str(length) + ");"
-    # Execute and get word ID
-    word_id = 0
+    q_word = """INSERT INTO `dictionary`.`word` (`word`, `length`) VALUES ('%s', %d);""" % (word, length)
+
+    try:
+        cur = db.cursor(MySQLdb.cursors.DictCursor)
+        # cur.execute(q_word)
+        word_id = cur.lastrowid
+        db.commit()
+    except MySQLdb.Error as err:
+        print("Query error: {}".format(err))
+        return
 
     for gram in grams:
         # TODO: check the ngram existence and get it's ID!
