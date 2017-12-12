@@ -18,15 +18,18 @@ def insert(word, length):
     # ...
     grams = parse_ngrams(word)
 
-    q_word = """INSERT INTO `dictionary`.`word` (`word`, `length`) VALUES ('%s', %d);""" % (word, length)
+    q_word = """INSERT INTO `word` (`word`, `length`) VALUES ('%s', %d);""" % (word, length)
 
     try:
         cur = db.cursor(MySQLdb.cursors.DictCursor)
         # cur.execute(q_word)
         word_id = cur.lastrowid
         db.commit()
-    except MySQLdb.Error as err:
-        print("Query error: {}".format(err))
+    except MySQLdb.Error as error:
+        print("Query error: {}".format(error))
+        return
+
+    if not word_id:
         return
 
     for gram in grams:
@@ -37,11 +40,11 @@ def insert(word, length):
         gram_id = 0
 
         if not gram_id:
-            q_gram = "INSERT INTO `ngram` ('gram', 'length') VALUE ('%s', %d);" % (gram, len(gram))
+            q_gram = "INSERT INTO `ngram` (`gram`, `length`) VALUE ('%s', %d);" % (gram, len(gram))
             # Execute and get n-gram ID
             gram_id = 0
 
-        q_ref = "INSERT INTO `word_to_ngram` ('word_id', 'ngram_id') VALUE ('%d', %d);" % (word_id, gram_id)
+        q_ref = "INSERT INTO `word_to_ngram` (`word_id`, `ngram_id`) VALUE (%d, %d);" % (word_id, gram_id)
 
 
 def parse_ngrams(word):
