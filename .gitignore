@@ -3,5 +3,5 @@
 venv/
 *.pyc
 
-words.txt
+source/words.txt
 dictionary
