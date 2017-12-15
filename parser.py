@@ -1,14 +1,16 @@
 import repository
 
 
-resource = open('source/words.txt', 'r')
+resource = open('source/one-thousand-words.txt', 'r')
 
 i = 1
-word = resource.read(i).strip()
+word = resource.readline().strip()
 while word:
     print("%s" % word)
 
-    repository.insert(word, len(word))
+    repository.insert(word)
 
     i += 1
-    word = resource.read(i).strip()
+    word = resource.readline().strip()
+
+resource.close()
