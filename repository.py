@@ -10,16 +10,15 @@ try:
 except MySQLdb.Error as err:
     print("Connection error: {}".format(err))
 
+try:
+    cur = db.cursor(MySQLdb.cursors.DictCursor)
+except MySQLdb.Error as error:
+    print("Query error: {}".format(error))
+
 
 def insert(word):
     """ Insert new word with N-grams """
     db.rollback()
-
-    try:
-        cur = db.cursor(MySQLdb.cursors.DictCursor)
-    except MySQLdb.Error as error:
-        print("Query error: {}".format(error))
-        return
 
     # TODO: check the word existence!
     # ...
@@ -38,13 +37,13 @@ def insert(word):
         db.rollback()
         return
 
-    grams = set([s.lower() for s in parse_ngrams(word)])
+    grams = parse_ngrams(word)
     for gram in grams:
 
         q_gram = """SELECT id FROM `ngram` WHERE `gram` = %s;"""
 
         try:
-            cur.execute(q_gram.lower(), (gram,))
+            cur.execute(q_gram, (gram,))
             gram_inf = cur.fetchone()
         except MySQLdb.Error as error:
             db.rollback()
@@ -75,14 +74,52 @@ def insert(word):
     db.commit()
 
 
-def parse_ngrams(word):
+def parse_ngrams(word, unique=True, lower=True, min=1):
     """ Get words' N-grams"""
 
     grams = []
     length = len(word)
-    for size in range(1, length + 1):
+    for size in range(min, length + 1):
         for current in range(length):
             if size + current <= length:
                 grams.append(word[current:(size + current)])
 
+    if unique:
+        grams = set(grams)
+    if lower:
+        grams = set([s.lower() for s in grams])
+
     return grams
+
+
+def search(query, order='DESC'):
+    """ Searching word by query """
+
+    min_len = int(len(query)/2)
+    grams = parse_ngrams(query, min=min_len)
+    q_search = """
+        SELECT
+          w.word               AS `Word`,
+          MAX(n.length)        AS `Length`,
+          GROUP_CONCAT(n.gram) AS `N-grams`,
+          SUM(LENGTH(n.gram))  AS `Score`
+        FROM ngram n
+        INNER JOIN word_to_ngram wn ON wn.ngram_id = n.id
+        INNER JOIN word          w  ON wn.word_id = w.id
+        WHERE %s
+        GROUP BY w.id
+        ORDER BY `Score` %s, w.length %s
+    """
+
+    conditions = 'n.gram IN(' + ','.join(["'%s'" % gram for gram in grams]) + ')'
+    sec_order = "ASC" if order == "DESC" else "DESC"
+
+    try:
+        cur.execute(q_search % (conditions, order, sec_order))
+        res = cur.fetchall()
+    except MySQLdb.Error as error:
+        db.rollback()
+        print("Search words // Query error: {}".format(error))
+        return
+
+    return res
