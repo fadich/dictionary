@@ -1,12 +1,17 @@
 import MySQLdb
+import sys
 
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 try:
     db = MySQLdb.connect(
         host="localhost",
         user="root",
         passwd="toor",
-        db="dictionary")
+        db="products",
+        charset='utf8')
 except MySQLdb.Error as err:
     print("Connection error: {}".format(err))
 
@@ -67,9 +72,10 @@ def insert(word):
         try:
             cur.execute(q_ref, (word_id, gram_id))
         except MySQLdb.Error as error:
-            db.rollback()
-            print("Relation insert for " + gram + " // Query error: {}".format(error))
-            return
+            # db.rollback()
+            # print("Relation insert for " + gram + " // Query error: {}".format(error))
+            'odd'
+            # return
 
     db.commit()
 
@@ -84,10 +90,10 @@ def parse_ngrams(word, unique=True, lower=True, min=1):
             if size + current <= length:
                 grams.append(word[current:(size + current)])
 
+    if lower:
+        grams = [gram.lower() for gram in grams]
     if unique:
         grams = set(grams)
-    if lower:
-        grams = set([s.lower() for s in grams])
 
     return grams
 

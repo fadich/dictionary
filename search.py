@@ -1,6 +1,10 @@
 import repository
 import sys
+import time
 
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 # if __name__ == '__main__':
 #     arg = ''
@@ -20,13 +24,22 @@ import sys
 #
 #     exit()
 
+debug = False
+
 while 1:
-    arg = raw_input('Query: ')
+    query = raw_input('Query: ')
 
-    if arg == "\q":
-        exit()
+    if query == "\q":
+        break
+    if query == "\d":
+        debug = True
+        print("Debug enabled")
+        continue
 
-    words = repository.search(arg, order='ASC')
+    if debug:
+        started = time.time()
+
+    words = repository.search(query.decode('utf-8'), order='ASC')
 
     index = len(words)
 
@@ -36,3 +49,7 @@ while 1:
     for word in words:
         print "%s - %s\t\t%s" % (index, word.get('Word'), word.get('Score'))
         index -= 1
+
+    if debug:
+        ended = time.time()
+        print "Request time: %ss" % (ended - started)
