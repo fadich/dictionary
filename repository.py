@@ -1,5 +1,6 @@
 import MySQLdb
 import sys
+import re
 
 
 reload(sys)
@@ -10,7 +11,7 @@ try:
         host="localhost",
         user="root",
         passwd="toor",
-        db="products",
+        db="products_opt",
         charset='utf8')
 except MySQLdb.Error as err:
     print("Connection error: {}".format(err))
@@ -80,12 +81,19 @@ def insert(word):
     db.commit()
 
 
-def parse_ngrams(word, unique=True, lower=True, min=1):
+def parse_ngrams(word, unique=True, lower=True, min=4, max=10):
     """ Get words' N-grams"""
+
+    word = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word)
+
+    if min >= len(word):
+        min = len(word) - 2
+    if max >= len(word):
+        max = len(word)
 
     grams = []
     length = len(word)
-    for size in range(min, length + 1):
+    for size in range(min, max + 1):
         for current in range(length):
             if size + current <= length:
                 grams.append(word[current:(size + current)])
@@ -101,23 +109,37 @@ def parse_ngrams(word, unique=True, lower=True, min=1):
 def search(query, order='DESC'):
     """ Searching word by query """
 
-    min_len = int(len(query)/2)
-    grams = parse_ngrams(query, min=min_len)
-    q_search = """
-        SELECT
-          w.word               AS `Word`,
-          MAX(n.length)        AS `Length`,
-          GROUP_CONCAT(n.gram) AS `N-grams`,
-          SUM(LENGTH(n.gram))  AS `Score`
-        FROM ngram n
-        INNER JOIN word_to_ngram wn ON wn.ngram_id = n.id
-        INNER JOIN word          w  ON wn.word_id = w.id
-        WHERE %s
-        GROUP BY w.id
-        ORDER BY `Score` %s, w.length %s
-    """
+    query = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`]+", '', query)
 
-    conditions = 'n.gram IN(' + ','.join(["'%s'" % gram for gram in grams]) + ')'
+    if len(query) <= 3:
+        q_search = """
+            SELECT
+              w.word   AS `Word`,
+              w.length AS `Length`,
+              0        AS `Score`
+            FROM word w
+            WHERE %s
+            GROUP BY w.id
+            ORDER BY `Score` %s, w.length %s
+                """
+        conditions = 'w.word LIKE(\'%' + query + '%\')'
+    else:
+        grams = parse_ngrams(query)
+        q_search = """
+            SELECT
+              w.word               AS `Word`,
+              MAX(n.length)        AS `Length`,
+              -- GROUP_CONCAT(n.gram) AS `N-grams`,
+              SUM(n.length) * MAX(n.length / w.length)  AS `Score`
+            FROM ngram n
+            INNER JOIN word_to_ngram wn ON wn.ngram_id = n.id
+            INNER JOIN word          w  ON wn.word_id = w.id
+            WHERE %s
+            GROUP BY w.id
+            ORDER BY `Score` %s, w.length %s
+        """
+        conditions = 'n.gram IN(' + ','.join(["'%s'" % gram for gram in grams]) + ')'
+
     sec_order = "ASC" if order == "DESC" else "DESC"
 
     try:
