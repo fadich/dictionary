@@ -75,7 +75,7 @@ def insert(word):
         except MySQLdb.Error as error:
             # db.rollback()
             # print("Relation insert for " + gram + " // Query error: {}".format(error))
-            'odd'
+            ''
             # return
 
     db.commit()
