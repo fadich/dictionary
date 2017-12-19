@@ -25,6 +25,7 @@ sys.setdefaultencoding('utf-8')
 #     exit()
 
 debug = False
+fully = False
 
 while 1:
     query = raw_input('Query: ')
@@ -32,8 +33,12 @@ while 1:
     if query == "\q":
         break
     if query == "\d":
-        debug = True
-        print("Debug enabled")
+        debug = not debug
+        print("Debug enabled" if debug else "Debug disabled")
+        continue
+    if query == "\\a":
+        fully = not fully
+        print("All results will be displayed" if fully else "Only best results will be displayed")
         continue
 
     if debug:
@@ -45,10 +50,16 @@ while 1:
 
     if not index:
         print("< No results... >")
+    else:
+        maxScore = words[-1].get('Score')
+        dScore = maxScore / 100 * 40    # display only best 60%
 
-    for word in words:
-        print "%s - %s\t\t%s" % (index, word.get('Word'), word.get('Score'))
-        index -= 1
+        for word in words:
+            if word.get('Score') < dScore and not fully:
+                continue
+
+            print "%s - %s\t\t%s" % (index, word.get('Word'), word.get('Score'))
+            index -= 1
 
     if debug:
         ended = time.time()

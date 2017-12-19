@@ -45,6 +45,8 @@ def insert(word):
 
     grams = parse_ngrams(word)
     for gram in grams:
+        if not len(gram):
+            continue
 
         q_gram = """SELECT id FROM `ngram` WHERE `gram` = %s;"""
 
@@ -114,9 +116,9 @@ def search(query, order='DESC'):
     if len(query) <= 3:
         q_search = """
             SELECT
-              w.word   AS `Word`,
-              w.length AS `Length`,
-              0        AS `Score`
+              w.word       AS `Word`,
+              w.length     AS `Length`,
+              1 / w.length AS `Score`
             FROM word w
             WHERE %s
             GROUP BY w.id
