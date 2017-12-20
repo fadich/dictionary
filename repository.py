@@ -113,6 +113,9 @@ def search(query, order='DESC'):
 
     query = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`]+", '', query)
 
+    if not query:
+        return None
+
     if len(query) <= 3:
         q_search = """
             SELECT
@@ -121,18 +124,18 @@ def search(query, order='DESC'):
               1 / w.length AS `Score`
             FROM word w
             WHERE %s
-            GROUP BY w.id
             ORDER BY `Score` %s, w.length %s
                 """
         conditions = 'w.word LIKE(\'%' + query + '%\')'
     else:
-        grams = parse_ngrams(query)
+        min = 10 if len(query) > 20 else 4
+        grams = parse_ngrams(query, min=min)
         q_search = """
             SELECT
               w.word               AS `Word`,
               MAX(n.length)        AS `Length`,
               -- GROUP_CONCAT(n.gram) AS `N-grams`,
-              SUM(n.length) * MAX(n.length / w.length)  AS `Score`
+              SUM(n.length) * MAX(n.length)  AS `Score`
             FROM ngram n
             INNER JOIN word_to_ngram wn ON wn.ngram_id = n.id
             INNER JOIN word          w  ON wn.word_id = w.id

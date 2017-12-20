@@ -36,9 +36,9 @@ while 1:
         debug = not debug
         print("Debug enabled" if debug else "Debug disabled")
         continue
-    if query == "\\a":
+    if query == "\\f":
         fully = not fully
-        print("All results will be displayed" if fully else "Only best results will be displayed")
+        print("Results will be displayed fully" if fully else "Only best results will be displayed")
         continue
 
     if debug:
@@ -46,20 +46,19 @@ while 1:
 
     words = repository.search(query.decode('utf-8'), order='ASC')
 
-    index = len(words)
+    index = len(words) if (words and len(words)) else 0
 
     if not index:
         print("< No results... >")
     else:
         maxScore = words[-1].get('Score')
-        dScore = maxScore / 100 * 40    # display only best 60%
+        dScore = maxScore / 100 * 60    # display only best 40%
 
         for word in words:
             if word.get('Score') < dScore and not fully:
                 continue
 
-            print "%s - %s\t\t%s" % (index, word.get('Word'), word.get('Score'))
-            index -= 1
+            print "%s - %s" % (word.get('Score'), word.get('Word'))
 
     if debug:
         ended = time.time()

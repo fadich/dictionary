@@ -18,6 +18,10 @@ CREATE TABLE ngram
   DEFAULT COLLATE utf8_general_ci
   ENGINE = InnoDB;
 
+ALTER TABLE ngram ADD KEY(`gram`);
+-- CREATE INDEX ngram_ngram_index
+--   ON ngram (gram);
+
 CREATE INDEX ngram_length_index
   ON ngram (length);
 
