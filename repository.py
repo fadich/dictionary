@@ -11,7 +11,7 @@ try:
         host="localhost",
         user="root",
         passwd="toor",
-        db="products_opt",
+        db="products_n35",
         charset='utf8')
 except MySQLdb.Error as err:
     print("Connection error: {}".format(err))
@@ -83,7 +83,7 @@ def insert(word):
     db.commit()
 
 
-def parse_ngrams(word, unique=True, lower=True, min=4, max=10):
+def parse_ngrams(word, unique=True, lower=True, min=3, max=5):
     """ Get words' N-grams"""
 
     word = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word)
@@ -128,7 +128,7 @@ def search(query, order='DESC'):
                 """
         conditions = 'w.word LIKE(\'%' + query + '%\')'
     else:
-        min = 10 if len(query) > 20 else 4
+        min = 5 if len(query) > 10 else 4
         grams = parse_ngrams(query, min=min)
         q_search = """
             SELECT
