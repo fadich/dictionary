@@ -11,7 +11,7 @@ try:
         host="localhost",
         user="root",
         passwd="toor",
-        db="products_n35",
+        db="products_2",
         charset='utf8')
 except MySQLdb.Error as err:
     print("Connection error: {}".format(err))
@@ -83,7 +83,7 @@ def insert(word):
     db.commit()
 
 
-def parse_ngrams(word, unique=True, lower=True, min=3, max=5):
+def parse_ngrams(word, unique=True, lower=True, min=2, max=2):
     """ Get words' N-grams"""
 
     word = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word)
@@ -128,14 +128,13 @@ def search(query, order='DESC'):
                 """
         conditions = 'w.word LIKE(\'%' + query + '%\')'
     else:
-        min = 5 if len(query) > 10 else 4
-        grams = parse_ngrams(query, min=min)
+        grams = parse_ngrams(query)
         q_search = """
             SELECT
-              w.word               AS `Word`,
-              MAX(n.length)        AS `Length`,
+              w.word        AS `Word`,
+              MAX(n.length) AS `Length`,
               -- GROUP_CONCAT(n.gram) AS `N-grams`,
-              SUM(n.length) * MAX(n.length)  AS `Score`
+              SUM(n.length) AS `Score`
             FROM ngram n
             INNER JOIN word_to_ngram wn ON wn.ngram_id = n.id
             INNER JOIN word          w  ON wn.word_id = w.id
