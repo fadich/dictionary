@@ -26,21 +26,22 @@ while 1:
     if debug:
         started = time.time()
 
-    words = repository.search(query.decode('utf-8'), order='ASC')
+    words = repository.search(query.decode('utf-8'))
+    # ended = time.time()
 
     index = len(words) if (words and len(words)) else 0
 
     if not index:
         print("< No results... >")
     else:
-        maxScore = words[-1].get('Score')
-        dScore = maxScore / 100 * 80    # display only best 20%
+        maxScore = words[-1].get('_score')
+        dScore = maxScore / 100 * 60    # display only best 20%
 
         for word in words:
-            if word.get('Score') < dScore and not fully:
+            if word.get('_score') < dScore and not fully:
                 continue
 
-            print "%s - %s" % (word.get('Score'), word.get('Word'))
+            print "%s - %s" % (word.get('_score'), word.get('name'))
 
     if debug:
         ended = time.time()

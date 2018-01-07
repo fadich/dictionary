@@ -6,12 +6,14 @@ import re
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+words = list()
+
 try:
     db = MySQLdb.connect(
         host="localhost",
         user="root",
         passwd="toor",
-        db="products_n35",
+        db="products_online",
         charset='utf8')
 except MySQLdb.Error as err:
     print("Connection error: {}".format(err))
@@ -21,72 +23,44 @@ try:
 except MySQLdb.Error as error:
     print("Query error: {}".format(error))
 
+try:
+    q_init = """
+        SELECT
+          p.name       AS `name`
+        FROM product p
+    """
+
+    cur.execute(q_init)
+    res = cur.fetchall()
+    if res:
+        # word = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word)
+        for word in res:
+            word['_name'] = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word.get('name')).lower()
+            words.append(word)
+except MySQLdb.Error as error:
+    print("Query error: {}".format(error))
+
 
 def insert(word):
-    """ Insert new word with N-grams """
+    """Insert new word"""
     db.rollback()
 
-    # TODO: check the word existence!
-    # ...
-
-    q_word = """INSERT INTO `word` (`word`, `length`) VALUES (%s, %s);"""
+    q_word = """INSERT INTO `product` (`name`) VALUES (%s);"""
 
     try:
-        cur.execute(q_word, (word.lower(), len(word)))
-        word_id = cur.lastrowid
+        cur.execute(q_word, (word,))
     except MySQLdb.Error as error:
         db.rollback()
         print("Word // Query error: {}".format(error))
         return
 
-    if not word_id:
-        db.rollback()
-        return
-
-    grams = parse_ngrams(word)
-    for gram in grams:
-        if not len(gram):
-            continue
-
-        q_gram = """SELECT id FROM `ngram` WHERE `gram` = %s;"""
-
-        try:
-            cur.execute(q_gram, (gram,))
-            gram_inf = cur.fetchone()
-        except MySQLdb.Error as error:
-            db.rollback()
-            print("N-Gram select " + gram + "// Query error: {}".format(error))
-            return
-
-        if not gram_inf:
-            q_gram = """INSERT INTO `ngram` (`gram`, `length`) VALUE (%s, %s);"""
-
-            try:
-                cur.execute(q_gram, (gram.lower(), len(gram)))
-                gram_id = cur.lastrowid
-            except MySQLdb.Error as error:
-                db.rollback()
-                print("N-Gram insert " + gram + "// Query error: {}".format(error))
-                return
-        else:
-            gram_id = gram_inf.get('id')
-
-        q_ref = """INSERT INTO `word_to_ngram` (`word_id`, `ngram_id`) VALUE (%s, %s);"""
-        try:
-            cur.execute(q_ref, (word_id, gram_id))
-        except MySQLdb.Error as error:
-            # db.rollback()
-            # print("Relation insert for " + gram + " // Query error: {}".format(error))
-            ''
-            # return
+    words.append(word)
 
     db.commit()
 
 
-def parse_ngrams(word, unique=True, lower=True, min=3, max=5):
+def parse_ngrams(word, unique=True, lower=True, min=2, max=3):
     """ Get words' N-grams"""
-
-    word = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word)
 
     if min >= len(word):
         min = len(word) - 2
@@ -108,51 +82,30 @@ def parse_ngrams(word, unique=True, lower=True, min=3, max=5):
     return grams
 
 
-def search(query, order='DESC'):
-    """ Searching word by query """
+def search(query):
+    res = []
+    query = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', query)
+    opt_len = 2 if len(query) < 6 else int(len(query) / 2)
+    grams = parse_ngrams(query, min=opt_len, max=opt_len)
 
-    query = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`]+", '', query)
+    for word in words:
+        score = 0.0
+        for gram in grams:
+            length = len(gram)
+            score += word.get('_name').count(gram) * length
+        if score:
+            word['_score'] = score
+            res.append(word)
 
-    if not query:
-        return None
+    # Sorting results...
+    for i in range(len(res) - 1):
+        k = i + 1
+        while k:
+            if res[k].get('_score') < res[k - 1].get('_score'):
+                res[k - 1], res[k] = res[k], res[k - 1]
+                k -= 1
+                continue
 
-    if len(query) <= 3:
-        q_search = """
-            SELECT
-              w.word       AS `Word`,
-              w.length     AS `Length`,
-              1 / w.length AS `Score`
-            FROM word w
-            WHERE %s
-            ORDER BY `Score` %s, w.length %s
-                """
-        conditions = 'w.word LIKE(\'%' + query + '%\')'
-    else:
-        min = 5 if len(query) > 10 else 4
-        grams = parse_ngrams(query, min=min)
-        q_search = """
-            SELECT
-              w.word               AS `Word`,
-              MAX(n.length)        AS `Length`,
-              -- GROUP_CONCAT(n.gram) AS `N-grams`,
-              SUM(n.length) * MAX(n.length)  AS `Score`
-            FROM ngram n
-            INNER JOIN word_to_ngram wn ON wn.ngram_id = n.id
-            INNER JOIN word          w  ON wn.word_id = w.id
-            WHERE %s
-            GROUP BY w.id
-            ORDER BY `Score` %s, w.length %s
-        """
-        conditions = 'n.gram IN(' + ','.join(["'%s'" % gram for gram in grams]) + ')'
-
-    sec_order = "ASC" if order == "DESC" else "DESC"
-
-    try:
-        cur.execute(q_search % (conditions, order, sec_order))
-        res = cur.fetchall()
-    except MySQLdb.Error as error:
-        db.rollback()
-        print("Search words // Query error: {}".format(error))
-        return
+            break
 
     return res
