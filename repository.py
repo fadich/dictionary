@@ -33,7 +33,6 @@ try:
     cur.execute(q_init)
     res = cur.fetchall()
     if res:
-        # word = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word)
         for word in res:
             word['_name'] = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word.get('name')).lower()
             words.append(word)
