@@ -35,7 +35,7 @@ while 1:
         print("< No results... >")
     else:
         maxScore = words[-1].get('_score')
-        dScore = maxScore / 100 * 60    # display only best 20%
+        dScore = maxScore / 100 * 40    # display only best 20%
 
         for word in words:
             if word.get('_score') < dScore and not fully:
