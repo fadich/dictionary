@@ -34,7 +34,7 @@ while 1:
         print("< No results... >")
     else:
         maxScore = words[-1].get('Score')
-        dScore = maxScore / 100 * 60    # display only best 40%
+        dScore = maxScore / 100 * 80    # display only best 40%
 
         for word in words:
             if word.get('Score') < dScore and not fully:
