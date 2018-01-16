@@ -41,7 +41,7 @@ while 1:
             if word.get('_score') < dScore and not fully:
                 continue
 
-            print "%s - %s" % (word.get('_score'), word.get('name'))
+            print "%s - %s" % (word.get('_score'), word.get('word'))
 
     if debug:
         ended = time.time()

@@ -13,7 +13,7 @@ try:
         host="localhost",
         user="root",
         passwd="toor",
-        db="products_online",
+        db="words",
         charset='utf8')
 except MySQLdb.Error as err:
     print("Connection error: {}".format(err))
@@ -26,15 +26,15 @@ except MySQLdb.Error as error:
 try:
     q_init = """
         SELECT
-          p.name       AS `name`
-        FROM product p
+          w.word       AS `word`
+        FROM word w
     """
 
     cur.execute(q_init)
     res = cur.fetchall()
     if res:
         for word in res:
-            word['_name'] = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word.get('name')).lower()
+            word['_word'] = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', word.get('word')).lower()
             words.append(word)
 except MySQLdb.Error as error:
     print("Query error: {}".format(error))
@@ -44,10 +44,10 @@ def insert(word):
     """Insert new word"""
     db.rollback()
 
-    q_word = """INSERT INTO `product` (`name`) VALUES (%s);"""
+    q_word = """INSERT INTO `word` (`word`, `length`) VALUES (%s, %s);"""
 
     try:
-        cur.execute(q_word, (word,))
+        cur.execute(q_word, (word, len(word)))
     except MySQLdb.Error as error:
         db.rollback()
         print("Word // Query error: {}".format(error))
@@ -91,7 +91,7 @@ def search(query):
         score = 0.0
         for gram in grams:
             length = len(gram)
-            score += word.get('_name').count(gram) * length
+            score += word.get('_word').count(gram) * length
         if score:
             word['_score'] = score
             res.append(word)
