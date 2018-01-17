@@ -5,7 +5,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-resource = open('source/words.txt', 'r')
+resource = open('source/ten-thousand-words.txt', 'r')
 
 i = 1
 word = resource.readline().strip()

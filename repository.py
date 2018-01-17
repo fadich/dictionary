@@ -83,8 +83,10 @@ def parse_ngrams(word, unique=True, lower=True, min=2, max=3):
 
 def search(query):
     res = []
+    q_len = len(query)
+
     query = re.sub(u"[\s\.\\\/\!\@\#\$\%\^\&\*\(\)\_\-\+\~\`\,\'\"\]\[\{\}\=]+", '', query)
-    opt_len = 2 if len(query) < 6 else int(len(query) / 2)
+    opt_len = 2 if q_len < 6 else int(q_len / 2)
     grams = parse_ngrams(query, min=opt_len, max=opt_len)
 
     for word in words:
@@ -93,14 +95,14 @@ def search(query):
             length = len(gram)
             score += word.get('_word').count(gram) * length
         if score:
-            word['_score'] = score
+            word['_score'] = score / (abs(q_len - len(word.get('_word'))) + 1)
             res.append(word)
 
     # Sorting results...
     for i in range(len(res) - 1):
         k = i + 1
         while k:
-            if res[k].get('_score') < res[k - 1].get('_score'):
+            if res[k].get('_score') > res[k - 1].get('_score'):
                 res[k - 1], res[k] = res[k], res[k - 1]
                 k -= 1
                 continue
