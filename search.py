@@ -34,14 +34,15 @@ while 1:
     if not index:
         print("< No results... >")
     else:
-        maxScore = words[-1].get('_score')
-        dScore = maxScore / 100 * 40    # display only best 20%
+        maxScore = words[0].get('_score')
+        dScore = maxScore / 100 * 40    # display only best 60%
+
+        words.reverse()
 
         for word in words:
             if word.get('_score') < dScore and not fully:
                 continue
-
-            print "%s - %s" % (word.get('_score'), word.get('word'))
+            print "%0.f - %s" % (word.get('_score'), word.get('word'))
 
     if debug:
         ended = time.time()
