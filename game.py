@@ -2,7 +2,7 @@ import repository
 
 
 class Presenter:
-    def __init__(self, players=set(), penalty=0.1):
+    def __init__(self, players=set(), penalty=0.3):
         p = list()
         for player in players:
             p.append({
@@ -19,12 +19,12 @@ class Presenter:
         """TODO: Doc..."""
         return self._players[self._current_player]
 
-    def get_last_turn(self, suscess):
+    def get_last_turn(self, success):
         """TODO: Doc..."""
         if not len(self._history):
             return None
 
-        if not suscess:
+        if not success:
             return self._history[-1]
 
         for i in range(1, len(self._history)):
@@ -35,6 +35,7 @@ class Presenter:
 
     def turn(self, option):
         """TODO: Doc..."""
+        option = option.lower()
         o_len = len(option)
 
         if self.check_history(option):

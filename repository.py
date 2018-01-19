@@ -81,9 +81,8 @@ def parse_ngrams(word, unique=True, lower=True, min=2, max=3):
     if unique:
         grams = list(set(grams))
     grams.sort()
-    grams.reverse()
 
-    return grams
+    return grams[::-1]
 
 
 def search(query):

@@ -1,6 +1,6 @@
 import sys
 import time
-import game
+from game import Presenter
 
 
 MESSAGE_INVALID_NUMBER = """! Sorry, this value is not valid. Please, type unsigned integer number."""
@@ -46,19 +46,26 @@ for i in range(number):
         players.append(name)
         break
 
-presenter = game.Presenter(set(players))
+presenter = Presenter(set(players))
 
 print MESSAGE_GAME_START + '\n'
 
 while 1:
     print
+
     cp = presenter.get_current_player()
-    word = raw_input(
-        '%s\'s (%.2f) turn, your option is: ' % (
+    cur = '%s\'s (%.2f) turn, your option is: ' % (
             cp.get('name'),
             round(cp.get('score'), 2)
         )
-     )
+
+    # if not presenter.get_last_turn(success=True):
+    #     print cur
+    #     print 'Let\'s start with word "Hello"!'
+    #     presenter.turn('hello')
+    #     continue
+
+    word = raw_input(cur)
 
     if len(word) and presenter.turn(word):
         print MESSAGE_GAME_TURN_SUCCESS
